@@ -1,6 +1,8 @@
 var Promise = require('bluebird')
 var _ = require('lodash')
 var URI = require('urijs')
+var json2csv = require('json2csv')
+var fs = Promise.promisifyAll(require('fs'))
 var config = require('./config')
 var request = Promise.promisify(require('request'))
 
@@ -172,5 +174,20 @@ return Promise
     return createRedirect(mapping.from, mapping.to)
   })
   .then(function (mappings) {
-    console.log(_.filter(mappings))
+    return _.chain(mappings)
+      .filter()
+      .reject('null')
+      .map('from')
+      .map(function (url) {
+        return { url }
+      })
+      .value()
+  })
+  .then(function (urls) {
+    return json2csv.parse(urls, {
+      fields: ['url']
+    })
+  })
+  .then(function (csvData) {
+    return fs.writeFileAsync('./missing.csv', csvData)
   })
