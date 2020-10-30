@@ -39,7 +39,7 @@ var listIntercomArticles = async function () {
     currentPage++
   }
 
-  return articles
+  return _.filter(articles, 'url')
 }
 
 var helpscoutRequest = function (req) {
@@ -121,7 +121,7 @@ var listHelpscoutDocs = async function (collectionId) {
     }
   }
 
-  return docs
+  return _.filter(docs, 'url')
 }
 
 var createRedirect = function (fromUrl, toUrl) {
@@ -144,6 +144,13 @@ var createRedirect = function (fromUrl, toUrl) {
   })
 }
 
+var normalizeTitle = function (title) {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^A-Za-z0-9]/ig, '')
+}
+
 return Promise
   .bind({})
   .then(function () {
@@ -155,7 +162,12 @@ return Promise
   .spread(function (articles, docs) {
     var intercomToHelpscout = {}
     _.each(articles, function (article) {
-      var helpscoutDoc = _.find(docs, { title: article.title })
+      var articleTitle = normalizeTitle(article.title)
+      var helpscoutDoc = _.find(docs, function (doc) {
+        var docTitle = normalizeTitle(doc.title)
+        return docTitle === articleTitle || docTitle.startsWith(articleTitle)
+      })
+
       intercomToHelpscout[article.url] = _.get(helpscoutDoc, 'url')
     })
 
